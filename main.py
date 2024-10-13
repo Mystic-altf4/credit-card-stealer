@@ -2,9 +2,54 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import pandas as pd
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 # Data file
-DATA_FILE = 'finance_data.csv'
+DATA_FILE = 'finance_data.csv' 
+def send_email_with_attachment(sender_email, sender_password, recipient_email, subject, body, attachment_path):
+    # E-posta mesajı oluştur
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = recipient_email
+    msg['Subject'] = subject
+
+    # E-posta gövdesini ekle
+    msg.attach(MIMEText(body, 'plain'))
+
+    # Dosya ekle
+    attachment = open(attachment_path, "rb")
+    part = MIMEBase('application', 'octet-stream')
+    part.set_payload(attachment.read())
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', f"attachment; filename= {DATA_FILE}")
+    msg.attach(part)
+
+    # SMTP sunucusuna bağlan ve e-postayı gönder
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)  # Gmail örneği, farklı sunucular için değişebilir
+        server.starttls()  # Güvenli bağlantı
+        server.login(sender_email, sender_password)
+        text = msg.as_string()
+        server.sendmail(sender_email, recipient_email, text)
+        server.quit()
+        print(f"E-posta başarıyla gönderildi: {recipient_email}")
+    except Exception as e:
+        print(f"E-posta gönderme hatası: {str(e)}")
+
+# Kullanım
+sender_email = 'aramarslan62@gmail.com'  # Gönderen e-posta adresi
+sender_password ="tipx woot xhkg uzlt"      # Gönderenin e-posta şifresi
+recipient_email = 'aramarslan62@gmail.com'  # Alıcı e-posta adresi
+subject = 'CSV Dosyası'
+body = 'İlgili CSV dosyasını ekte bulabilirsiniz.'
+attachment_path = 'finance_data.csv'   # Gönderilecek dosyanın yolu
+
+
+
 
 # Create the main window
 root = tk.Tk()
@@ -38,6 +83,8 @@ def add_record():
     messagebox.showinfo("Başarılı", "Kayıt eklendi.")
     clear_entries()
     load_data()
+    send_email_with_attachment(sender_email, sender_password, recipient_email, subject, body, attachment_path)
+
 
 # Function to load and display data
 def load_data():
